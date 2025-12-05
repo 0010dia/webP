@@ -2,7 +2,11 @@ import React, { useMemo, useState } from "react";
 
 function ListPage() {
   const fixedGenderLabel = "남성";
-  const [activeCat, setActiveCat] = useState("shoes");
+  const [activeCat, setActiveCat] = useState("shoes"); // shoes/new/lifestyle/sale/slim
+
+  // ✅ 추가: 선택된 사이즈 / 소재 상태
+  const [selectedSizes, setSelectedSizes] = useState([]); // number[]
+  const [selectedMaterials, setSelectedMaterials] = useState([]); // string[]
 
   const categories = [
     { key: "new", label: "신제품" },
@@ -13,6 +17,7 @@ function ListPage() {
     { key: "slipper", label: "슬리퍼" },
   ];
 
+  // 카테고리별 설명 문구
   const descByCat = {
     shoes:
       "Wool, Tree, Sugar 등 자연 소재로 만들어 놀랍도록 편안한 올버즈 제품을 만나보세요. 우리는 편안한 신발의 기준을 만들어가고 있습니다.",
@@ -22,7 +27,6 @@ function ListPage() {
     slim: "간편하게 신고 벗을 수 있는 슬립온 컬렉션. 편안함과 세련된 무드를 동시에 잡고 싶다면 가장 손쉬운 선택입니다.",
   };
 
-  // 세일이면 상단 nav/title/desc 숨김
   const isSale = activeCat === "sale";
 
   const title = useMemo(() => {
@@ -39,7 +43,25 @@ function ListPage() {
     return descByCat[activeCat] ?? descByCat.shoes;
   }, [activeCat, isSale]);
 
-  // ======= 상품 더미 데이터  =======
+  // ================== 필터용 목업 데이터 ==================
+  const sizeOptions = [
+    [220, 230, 240],
+    [250, 255, 260],
+    [265, 270, 275],
+    [280, 285, 290],
+    [295, 300, 305],
+    [310, 315, 320],
+  ];
+
+  const materials = [
+    "가볍고 시원한 tree",
+    "면",
+    "부드럽고 따뜻한 wool",
+    "캔버스",
+    "플라스틱 제로 식물성 가죽",
+  ];
+
+  // 상품 데이터 (이미지 경로는 public/img 기준)
   const products = [
     {
       id: 1,
@@ -99,24 +121,33 @@ function ListPage() {
     },
   ];
 
-  const sizeOptions = [
-    [220, 230, 240],
-    [250, 255, 260],
-    [265, 270, 275],
-    [280, 285, 290],
-    [295, 300, 305],
-    [310, 315, 320],
-  ];
-
-  const materials = [
-    "가볍고 시원한 tree",
-    "면",
-    "부드럽고 따뜻한 wool",
-    "캔버스",
-    "플라스틱 제로 식물성 가죽",
-  ];
-
   const formatKRW = (n) => `₩${n.toLocaleString("ko-KR")}`;
+
+  // ================== 필터 선택 / 해제 핸들러 ==================
+  const toggleSize = (size) => {
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
+  };
+
+  const toggleMaterial = (material) => {
+    setSelectedMaterials((prev) =>
+      prev.includes(material)
+        ? prev.filter((m) => m !== material)
+        : [...prev, material]
+    );
+  };
+
+  const clearSizeFromChip = (size) => {
+    setSelectedSizes((prev) => prev.filter((s) => s !== size));
+  };
+
+  const clearMaterialFromChip = (material) => {
+    setSelectedMaterials((prev) => prev.filter((m) => m !== material));
+  };
+
+  const hasAppliedFilters =
+    selectedSizes.length > 0 || selectedMaterials.length > 0;
 
   return (
     <main style={styles.page}>
@@ -213,42 +244,92 @@ function ListPage() {
 
         <hr style={styles.divider} />
 
-        {/* ===================== HR 아래: 좌측 필터 UI + 우측 상품 나열 UI ===================== */}
+        {/* ================== HR 아래: 필터 + 상품 리스트 ================== */}
         <section style={styles.listSection}>
-          {/* Left filters (UI only) */}
+          {/* 왼쪽 필터 영역 */}
           <aside style={styles.sidebar} aria-label="필터">
+            {/* ✅ 적용된 필터 영역 */}
+            {hasAppliedFilters && (
+              <div style={styles.appliedSection}>
+                <h2 style={styles.filterTitle}>적용된 필터</h2>
+                <div style={styles.appliedChips}>
+                  {selectedSizes.map((size) => (
+                    <button
+                      key={`size-${size}`}
+                      type="button"
+                      style={styles.appliedChip}
+                      onClick={() => clearSizeFromChip(size)}
+                    >
+                      <span>{size}</span>
+                      <span style={styles.appliedChipClose}>×</span>
+                    </button>
+                  ))}
+                  {selectedMaterials.map((m) => (
+                    <button
+                      key={`mat-${m}`}
+                      type="button"
+                      style={{
+                        ...styles.appliedChip,
+                        ...styles.appliedChipWide,
+                      }}
+                      onClick={() => clearMaterialFromChip(m)}
+                    >
+                      <span>{m}</span>
+                      <span style={styles.appliedChipClose}>×</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 사이즈 필터 */}
             <h2 style={styles.filterTitle}>사이즈</h2>
             <div style={styles.sizeGrid}>
               {sizeOptions.map((row, i) => (
                 <div key={i} style={styles.sizeRow}>
-                  {row.map((sz) => (
-                    <button
-                      key={sz}
-                      type="button"
-                      style={styles.sizeBtn}
-                      onClick={() => {}}
-                    >
-                      {sz}
-                    </button>
-                  ))}
+                  {row.map((sz) => {
+                    const active = selectedSizes.includes(sz);
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        style={{
+                          ...styles.sizeBtn,
+                          ...(active ? styles.sizeBtnActive : null),
+                        }}
+                        onClick={() => toggleSize(sz)}
+                      >
+                        {sz}
+                      </button>
+                    );
+                  })}
                 </div>
               ))}
             </div>
 
             <div style={styles.filterDivider} />
 
+            {/* 소재 필터 */}
             <h2 style={styles.filterTitle}>소재</h2>
             <div style={styles.materialList}>
-              {materials.map((m) => (
-                <label key={m} style={styles.checkRow}>
-                  <input type="checkbox" style={styles.checkbox} />
-                  <span style={styles.checkLabel}>{m}</span>
-                </label>
-              ))}
+              {materials.map((m) => {
+                const checked = selectedMaterials.includes(m);
+                return (
+                  <label key={m} style={styles.checkRow}>
+                    <input
+                      type="checkbox"
+                      style={styles.checkbox}
+                      checked={checked}
+                      onChange={() => toggleMaterial(m)}
+                    />
+                    <span style={styles.checkLabel}>{m}</span>
+                  </label>
+                );
+              })}
             </div>
           </aside>
 
-          {/* Right products */}
+          {/* 오른쪽 상품 영역 */}
           <div style={styles.contentArea}>
             <div style={styles.contentTop}>
               <div style={styles.countText}>218개 제품</div>
@@ -257,7 +338,6 @@ function ListPage() {
                 style={styles.iconBtn}
                 aria-label="필터/정렬"
               >
-                {/* filter icon */}
                 <svg
                   width="18"
                   height="18"
@@ -282,7 +362,6 @@ function ListPage() {
                       alt={p.name}
                       style={styles.productImg}
                       onError={(e) => {
-                        // 이미지 없을 때 회색 박스처럼 보이게 처리 (UI 용)
                         e.currentTarget.style.display = "none";
                       }}
                     />
@@ -432,7 +511,6 @@ styles.divider = {
   margin: "10px 0 0",
 };
 
-/* ====== HR 아래 영역 스타일 ====== */
 styles.listSection = {
   display: "flex",
   gap: "48px",
@@ -442,6 +520,31 @@ styles.listSection = {
 styles.sidebar = {
   width: "280px",
   flex: "0 0 280px",
+};
+
+/* 적용된 필터 */
+styles.appliedSection = { marginBottom: "26px" };
+styles.appliedChips = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "10px",
+  marginTop: "10px",
+};
+styles.appliedChip = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "8px",
+  padding: "10px 14px",
+  border: "1px solid #212121",
+  borderRadius: "3px",
+  background: "#fff",
+  fontSize: "14px",
+  cursor: "pointer",
+};
+
+styles.appliedChipClose = {
+  fontSize: "14px",
 };
 
 styles.filterTitle = {
@@ -459,6 +562,10 @@ styles.sizeBtn = {
   background: "transparent",
   cursor: "pointer",
   fontSize: "14px",
+};
+styles.sizeBtnActive = {
+  background: "#111",
+  color: "#fff",
 };
 
 styles.filterDivider = {
