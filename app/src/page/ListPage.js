@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
+import { getProducts } from "../api/products";
 
 function ListPage() {
   const fixedGenderLabel = "남성";
@@ -61,65 +63,9 @@ function ListPage() {
     "플라스틱 제로 식물성 가죽",
   ];
 
-  // 상품 데이터 (이미지 경로는 public/img 기준)
-  const products = [
-    {
-      id: 1,
-      image: "/img/1.avif",
-      name: "남성 울 크루저",
-      meta: "캐주얼, 가벼운 산책, 클래식 스니커즈",
-      price: 170000,
-      badge: null,
-      isOnSale: false,
-    },
-    {
-      id: 2,
-      image: "/img/2.avif",
-      name: "남성 울 크루저 슬립온",
-      meta: "슬립온, 라이프스타일, 캐주얼",
-      price: 170000,
-      badge: null,
-      isOnSale: false,
-    },
-    {
-      id: 3,
-      image: "/img/3.avif",
-      name: "남성 울 러너 NZ",
-      meta: "캐주얼, 비즈니스, 클래식 스니커즈",
-      price: 150000,
-      oldPrice: 170000,
-      discountText: "11%",
-      badge: "HOLIDAY COLLECTION",
-      isOnSale: true,
-    },
-    {
-      id: 4,
-      image: "/img/4.avif",
-      name: "남성 트리 러너",
-      meta: "가볍고 시원한 착화감, 데일리 스니커즈",
-      price: 160000,
-      badge: null,
-      isOnSale: false,
-    },
-    {
-      id: 5,
-      image: "/img/5.avif",
-      name: "남성 트리 대셔",
-      meta: "액티브, 러닝, 트레이닝",
-      price: 190000,
-      badge: null,
-      isOnSale: false,
-    },
-    {
-      id: 6,
-      image: "/img/6.avif",
-      name: "남성 캔버스 페이서",
-      meta: "라이프스타일, 가벼운 외출, 캐주얼",
-      price: 165000,
-      badge: null,
-      isOnSale: false,
-    },
-  ];
+  const [products, setProducts] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const formatKRW = (n) => `₩${n.toLocaleString("ko-KR")}`;
 
@@ -146,8 +92,74 @@ function ListPage() {
     setSelectedMaterials((prev) => prev.filter((m) => m !== material));
   };
 
+  const apiFilters = useMemo(() => {
+    const filters = {};
+
+    // 카테고리
+    if (activeCat && activeCat !== "shoes") {
+      filters.category = activeCat;
+    }
+
+    // 세일
+    if (activeCat === "sale") {
+      filters.sale = true;
+    }
+
+    // 신제품
+    if (activeCat === "new") {
+      filters.newProduct = true;
+    }
+
+    // 소재 (다중 선택 → 1개 이상이면 서버에 전달)
+    if (selectedMaterials.length > 0) {
+      // 백엔드가 다중 material을 지원하는 경우
+      filters.material = selectedMaterials.join(",");
+    }
+
+    return filters;
+  }, [activeCat, selectedMaterials]);
+
   const hasAppliedFilters =
     selectedSizes.length > 0 || selectedMaterials.length > 0;
+
+  const mappedProducts = useMemo(() => {
+    return products.map((p) => {
+      const isOnSale = p.isOnSale || p.is_on_sale;
+      const discountRate = p.discountRate ?? 0;
+
+      return {
+        id: p._id,
+        image: p.images?.[0],
+        name: p.name,
+        meta: p.description,
+        price: p.price,
+        oldPrice:
+          isOnSale && discountRate > 0
+            ? Math.round(p.price / (1 - discountRate / 100))
+            : null,
+        discountText: isOnSale && discountRate > 0 ? `${discountRate}%` : null,
+        badge: isOnSale ? "SALE" : null,
+        isOnSale,
+      };
+    });
+  }, [products]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const data = await getProducts(apiFilters);
+        setProducts(data.products);
+        setTotalCount(data.total);
+      } catch (e) {
+        console.error("상품 조회 실패", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [apiFilters]);
 
   return (
     <main style={styles.page}>
@@ -353,7 +365,7 @@ function ListPage() {
             </div>
 
             <div style={styles.grid}>
-              {products.map((p) => (
+              {mappedProducts.map((p) => (
                 <article key={p.id} style={styles.card}>
                   <div style={styles.imageBox}>
                     {p.badge && <div style={styles.badge}>{p.badge}</div>}
