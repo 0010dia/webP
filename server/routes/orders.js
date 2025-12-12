@@ -1,87 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const { isLoggedIn } = require('../config/authMiddleware');
 
-// POST /api/orders - 주문 생성
-router.post('/', async (req, res) => {
+// 주문 생성 (결제)
+router.post('/', isLoggedIn, async (req, res) => {
   try {
-    if (!req.session.user) {
-      return res.status(401).json({
-        success: false,
-        message: '로그인이 필요합니다.'
-      });
-    }
-
-    const cart = req.session.cart || [];
-
-    if (cart.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: '장바구니가 비어 있습니다.'
-      });
-    }
-
-    // 주문 항목 준비
-    const items = cart.map(item => ({
-      productId: item.productId,
-      productName: item.productName,
-      size: item.size,
-      quantity: item.quantity,
-      priceAtPurchase: item.price
-    }));
-
-    // 총 금액 계산
-    const totalAmount = items.reduce((sum, item) => sum + (item.priceAtPurchase * item.quantity), 0);
-
-    // 주문 생성
-    const order = new Order({
-      userId: req.session.user.id,
+    const { items, totalAmount } = req.body;
+    const userId = req.session.user.user_id; // 세션에서 userId 가져오기
+    
+    // 주문 저장
+    const newOrder = new Order({
+      userId,
       items,
       totalAmount
     });
-
-    await order.save();
-
-    // 장바구니 비우기
-    req.session.cart = [];
-
-    res.json({
-      success: true,
-      order
-    });
+    
+    await newOrder.save();
+    res.json({ success: true, orderId: newOrder._id });
   } catch (error) {
-    console.error('주문 처리 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '주문 처리 중 오류가 발생했습니다.'
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: '주문 실패' });
   }
 });
 
-// GET /api/orders - 내 주문 내역 조회
-router.get('/', async (req, res) => {
+// 내 주문 내역 조회 (마이페이지용)
+router.get('/', isLoggedIn, async (req, res) => {
   try {
-    if (!req.session.user) {
-      return res.status(401).json({
-        success: false,
-        message: '로그인이 필요합니다.'
-      });
-    }
-
-    const orders = await Order.find({ userId: req.session.user.id })
-      .sort({ orderDate: -1 })
-      .populate('items.productId');
-
-    res.json({
-      success: true,
-      orders
-    });
+    const userId = req.session.user.user_id; // 세션에서 userId 가져오기
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
   } catch (error) {
-    console.error('주문 내역 조회 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '주문 내역 조회 중 오류가 발생했습니다.'
-    });
+    res.status(500).json({ success: false, error });
   }
 });
 
