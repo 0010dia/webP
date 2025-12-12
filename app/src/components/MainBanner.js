@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
+import { useNavigate } from "react-router-dom";
 
 const TEXT_COLOR = '#FFFFFF';
 const BORDER_COLOR = '#FFFFFF';
@@ -117,9 +118,10 @@ const RightImagePlaceholder = styled.div`
 `;
 
 const MainBanner = () => {
+     const navigate = useNavigate();
     
     const handleSaleClick = (type) => {
-        alert(`${type} 세일 페이지로 이동합니다.`);
+        navigate("/list");
     };
 
     return (
@@ -138,7 +140,7 @@ const MainBanner = () => {
                             남성 세일
                         </SaleButton>
                         <SaleButton 
-                            onClick={() => handleSaleClick('여성')}
+                          
                             aria-label="여성 세일 보기"
                         >
                             여성 세일

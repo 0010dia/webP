@@ -8,20 +8,15 @@ function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa" }}>
       <Header />
-      <MainPage />
-
-   
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px" }}>
         <Routes>
-   
-          <Route path="/" element={<Navigate to="/list" replace />} />
+          <Route path="/" element={<MainPage />} />
 
        
           <Route path="/list" element={<ListPage />} />
 
           
         </Routes>
-      </main>
+     
     </div>
   );
 }
