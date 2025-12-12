@@ -1,82 +1,75 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import * as cartAPI from '../api/cart';
 
 const CartContext = createContext();
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
+  if (!context) throw new Error('useCart must be used within a CartProvider');
   return context;
 };
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // 로컬 스토리지에서 장바구니 데이터 불러오기 (새로고침 해도 유지됨)
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('myCart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
 
-  // 장바구니 데이터 가져오기
-  const fetchCart = async () => {
-    try {
-      const response = await cartAPI.getCart();
-      if (response.success) {
-        setCart(response.cart || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch cart:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 앱 시작 시 장바구니 데이터 로드
   useEffect(() => {
-    fetchCart();
-  }, []);
+    localStorage.setItem('myCart', JSON.stringify(cart));
+  }, [cart]);
 
-  // 장바구니에 상품 추가
-  const addItem = async (productId, size, quantity) => {
-    try {
-      const response = await cartAPI.addToCart(productId, size, quantity);
-      if (response.success) {
-        setCart(response.cart);
-        return { success: true };
+  // 장바구니 추가 함수 (상품 전체 정보, 사이즈, 수량, 색상명, 이미지)
+  const addItem = (product, size, quantity, colorName, image) => {
+    setCart(prev => {
+      // 동일한 상품(ID + 사이즈 + 색상)이 있는지 확인
+      const existingItemIndex = prev.findIndex(item => 
+        item._id === product._id && item.size === size && item.colorName === colorName
+      );
+
+      if (existingItemIndex > -1) {
+        // 이미 있으면 수량만 증가
+        const newCart = [...prev];
+        newCart[existingItemIndex].quantity += quantity;
+        return newCart;
+      } else {
+        // 없으면 새로 추가
+        const newItem = {
+          _id: product._id,
+          name: product.name,
+          price: product.price, // 가격 정보 저장
+          size,
+          quantity,
+          colorName, // 색상 이름 저장
+          image,     // 색상별 이미지 저장
+        };
+        return [...prev, newItem];
       }
-      return { success: false, message: response.message };
-    } catch (error) {
-      const message = error.response?.data?.message || '장바구니 추가 중 오류가 발생했습니다.';
-      return { success: false, message };
-    }
+    });
   };
 
-  // 장바구니에서 상품 제거
-  const removeItem = async (index) => {
-    try {
-      const response = await cartAPI.removeFromCart(index);
-      if (response.success) {
-        setCart(response.cart);
-        return { success: true };
-      }
-      return { success: false, message: response.message };
-    } catch (error) {
-      const message = error.response?.data?.message || '장바구니 제거 중 오류가 발생했습니다.';
-      return { success: false, message };
-    }
+  // 장바구니 항목 삭제
+  const removeItem = (index) => {
+    setCart(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 장바구니 초기화 (주문 완료 후)
-  const clearCart = () => {
-    setCart([]);
+  // 장바구니 수량 변경 (선택 사항)
+  const updateQuantity = (index, change) => {
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) {
+        const newQty = item.quantity + change;
+        return newQty > 0 ? { ...item, quantity: newQty } : item;
+      }
+      return item;
+    }));
   };
 
   const value = {
     cart,
-    loading,
-    cartCount: cart.length,
     addItem,
     removeItem,
-    clearCart,
-    refreshCart: fetchCart,
+    updateQuantity,
+    cartCount: cart.length,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
