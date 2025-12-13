@@ -60,6 +60,20 @@ const ProductSchema = new mongoose.Schema({
     default: false
   },
 
+  // 판매량 (주문 생성 시 자동 증가)
+  salesCount: {
+    type: Number,
+    default: 0,
+    index: true
+  },
+
+  // 추천 점수 (정렬용)
+  recommendScore: {
+    type: Number,
+    default: 0,
+    index: true
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
