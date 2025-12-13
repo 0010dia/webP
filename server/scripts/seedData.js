@@ -25,7 +25,9 @@ const lifestyleProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
+    ],
+    salesCount: 0,
+    recommendScore: 85
   },
   {
     name: '남성 트리 러너',
@@ -45,7 +47,9 @@ const lifestyleProducts = [
       { size: 275, available: false },
       { size: 280, available: true },
       { size: 285, available: true }
-    ]
+    ],
+    salesCount: 0,
+    recommendScore: 92
   },
   {
     name: '남성 슈가 스니커즈',
@@ -63,7 +67,9 @@ const lifestyleProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
+    ],
+    salesCount: 0,
+    recommendScore: 88
   },
   {
     name: '남성 울 러너',
@@ -83,7 +89,9 @@ const lifestyleProducts = [
       { size: 275, available: true },
       { size: 280, available: true },
       { size: 285, available: true }
-    ]
+    ],
+    salesCount: 0,
+    recommendScore: 87
   },
   {
     name: '남성 캔버스 파이퍼',
@@ -102,7 +110,9 @@ const lifestyleProducts = [
       { size: 270, available: false },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
+    ],
+    salesCount: 0,
+    recommendScore: 95
   },
   {
     name: '남성 트리 대셔',
@@ -121,8 +131,9 @@ const lifestyleProducts = [
       { size: 275, available: true },
       { size: 280, available: true },
       { size: 285, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 82  },
   {
     name: '남성 울 플라이어',
     description: '울 소재의 플라이어. 편안한 착용감과 세련된 디자인.',
@@ -140,8 +151,9 @@ const lifestyleProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: false }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 91  },
   {
     name: '남성 트리 스킵퍼',
     description: '트리 소재의 스킵퍼. 가볍고 시원한 착용감.',
@@ -158,8 +170,9 @@ const lifestyleProducts = [
       { size: 265, available: true },
       { size: 270, available: true },
       { size: 275, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 89  },
   {
     name: '남성 슈가 브리즈',
     description: '슈가 소재의 브리즈. 친환경적이고 가벼운 신발.',
@@ -176,8 +189,9 @@ const lifestyleProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 84  },
   {
     name: '남성 캔버스 래퍼',
     description: '캔버스 소재의 래퍼. 클래식하고 편안한 디자인.',
@@ -195,8 +209,9 @@ const lifestyleProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 93  },
   {
     name: '남성 울 스트라이더',
     description: '울 소재의 스트라이더. 따뜻하고 스타일리시.',
@@ -236,8 +251,9 @@ const sliponProducts = [
       { size: 265, available: true },
       { size: 270, available: true },
       { size: 275, available: false }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 86  },
   {
     name: '남성 울 라운저',
     description: '울 소재의 라운저. 따뜻하고 편안한 실내외 겸용 슬립온.',
@@ -255,8 +271,9 @@ const sliponProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 88  },
   {
     name: '남성 슈가 슬리퍼',
     description: '슈가 소재의 슬리퍼. 친환경적이고 가벼운 착용감.',
@@ -272,8 +289,9 @@ const sliponProducts = [
       { size: 265, available: true },
       { size: 270, available: true },
       { size: 275, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 94  },
   {
     name: '남성 캔버스 슬립온',
     description: '캔버스 소재의 클래식 슬립온. 데일리 착용에 완벽.',
@@ -290,8 +308,9 @@ const sliponProducts = [
       { size: 265, available: true },
       { size: 270, available: true },
       { size: 275, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 83  },
   {
     name: '남성 트리 이지',
     description: '트리 소재의 이지 슬립온. 가볍고 편안.',
@@ -309,8 +328,9 @@ const sliponProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 92  },
   {
     name: '남성 울 코지',
     description: '울 소재의 코지 슬립온. 따뜻하고 포근한 착용감.',
@@ -327,8 +347,9 @@ const sliponProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: false }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 85  },
   {
     name: '남성 슈가 컴포트',
     description: '슈가 소재의 컴포트 슬립온. 친환경 소재로 편안함.',
@@ -344,8 +365,9 @@ const sliponProducts = [
       { size: 260, available: true },
       { size: 265, available: true },
       { size: 270, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 87  },
   {
     name: '남성 캔버스 릴렉스',
     description: '캔버스 소재의 릴렉스 슬립온. 편안한 일상화.',
@@ -362,8 +384,9 @@ const sliponProducts = [
       { size: 265, available: true },
       { size: 270, available: true },
       { size: 275, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 91  },
   {
     name: '남성 트리 브리즈',
     description: '트리 소재의 브리즈 슬립온. 통기성 좋고 가벼움.',
@@ -380,8 +403,9 @@ const sliponProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 89  },
   {
     name: '남성 울 플러시',
     description: '울 소재의 플러시 슬립온. 따뜻하고 포근한 느낌.',
@@ -398,8 +422,9 @@ const sliponProducts = [
       { size: 265, available: true },
       { size: 270, available: true },
       { size: 275, available: true }
-    ]
-  },
+    ],
+    salesCount: 0,
+    recommendScore: 86  },
   {
     name: '남성 슈가 소프트',
     description: '슈가 소재의 소프트 슬립온. 부드러운 착용감.',
@@ -417,7 +442,9 @@ const sliponProducts = [
       { size: 270, available: true },
       { size: 275, available: true },
       { size: 280, available: true }
-    ]
+    ],
+    salesCount: 0,
+    recommendScore: 90
   }
 ];
 
@@ -538,6 +565,18 @@ async function seedDatabase() {
 
     await Order.insertMany(sampleOrders);
     console.log(`샘플 주문 ${sampleOrders.length}개 생성 완료`);
+
+    // 샘플 주문에 따라 salesCount 업데이트
+    console.log('\n판매량 업데이트 중...');
+    for (const order of sampleOrders) {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(
+          item.productId,
+          { $inc: { salesCount: item.quantity } }
+        );
+      }
+    }
+    console.log('판매량 업데이트 완료');
 
     console.log('\n=== 데이터베이스 시딩 완료! ===');
     console.log(`총 상품 수: ${insertedLifestyle.length + insertedSlipon.length}개`);
