@@ -1,21 +1,38 @@
 import React, { useEffect, useMemo, useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import { getProducts } from "../api/products";
 
 function ListPage() {
+  const navigate = useNavigate();
   const fixedGenderLabel = "남성";
+
   const [activeCat, setActiveCat] = useState("shoes"); // shoes/new/lifestyle/sale/slim
 
   // ✅ 추가: 선택된 사이즈 / 소재 상태
   const [selectedSizes, setSelectedSizes] = useState([]); // number[]
-  const [selectedMaterials, setSelectedMaterials] = useState([]); // string[]
+  const [selectedMaterials, setSelectedMaterials] = useState([]); // ['tree', 'wool']
+
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sortKey, setSortKey] = useState("recommend");
+  // recommend | best | priceAsc | priceDesc | newest
+
+  const sortBtnRef = React.useRef(null);
+  const sortPopRef = React.useRef(null);
+
+  const sortOptions = [
+    { key: "recommend", label: "추천순" },
+    { key: "best", label: "판매순" },
+    { key: "priceAsc", label: "가격 낮은 순" },
+    { key: "priceDesc", label: "가격 높은 순" },
+    { key: "newest", label: "최신 등록 순" },
+  ];
 
   const categories = [
     { key: "new", label: "신제품" },
     { key: "active", label: "액티브" },
     { key: "lifestyle", label: "라이프스타일" },
     { key: "sale", label: "세일" },
-    { key: "slim", label: "슬립온" },
+    { key: "slipon", label: "슬립온" },
     { key: "slipper", label: "슬리퍼" },
   ];
 
@@ -56,24 +73,40 @@ function ListPage() {
   ];
 
   const materials = [
-    "가볍고 시원한 tree",
-    "면",
-    "부드럽고 따뜻한 wool",
-    "캔버스",
-    "플라스틱 제로 식물성 가죽",
+    { label: "가볍고 시원한 Tree", value: "tree" },
+    { label: "면", value: "sugar" },
+    { label: "부드럽고 따뜻한 Wool", value: "wool" },
+    { label: "캔버스", value: "canvas" },
   ];
 
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  const [hovered, setHovered] = useState(null); // product or null
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+  const [hoveredId, setHoveredId] = useState(null);
+
+  const onCardEnter = (p) => setHovered(p);
+  const onCardLeave = () => setHovered(null);
+
+  // 프리뷰가 커서 근처에 뜨게 (고정 위치)
+  const onCardMove = (e) => {
+    setHoverPos({ x: e.clientX + 24, y: e.clientY - 20 });
+  };
+
   const formatKRW = (n) => `₩${n.toLocaleString("ko-KR")}`;
 
   // ================== 필터 선택 / 해제 핸들러 ==================
   const toggleSize = (size) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
-    );
+    setSelectedSizes((prev) => {
+      const next = prev.includes(size)
+        ? prev.filter((s) => s !== size)
+        : [...prev, size];
+
+      console.log("selectedSizes next:", next);
+      return next;
+    });
   };
 
   const toggleMaterial = (material) => {
@@ -95,8 +128,13 @@ function ListPage() {
   const apiFilters = useMemo(() => {
     const filters = {};
 
-    // 카테고리
-    if (activeCat && activeCat !== "shoes") {
+    // ✅ 카테고리: new/sale는 실제 category가 아니므로 제외
+    if (
+      activeCat &&
+      activeCat !== "shoes" &&
+      activeCat !== "new" &&
+      activeCat !== "sale"
+    ) {
       filters.category = activeCat;
     }
 
@@ -110,26 +148,31 @@ function ListPage() {
       filters.newProduct = true;
     }
 
-    // 소재 (다중 선택 → 1개 이상이면 서버에 전달)
+    // 소재 (OR)
     if (selectedMaterials.length > 0) {
-      // 백엔드가 다중 material을 지원하는 경우
       filters.material = selectedMaterials.join(",");
     }
 
+    // 사이즈 (OR)
+    if (selectedSizes.length > 0) {
+      filters.sizes = selectedSizes.join(",");
+    }
+
     return filters;
-  }, [activeCat, selectedMaterials]);
+  }, [activeCat, selectedMaterials, selectedSizes]);
 
   const hasAppliedFilters =
     selectedSizes.length > 0 || selectedMaterials.length > 0;
 
   const mappedProducts = useMemo(() => {
-    return products.map((p) => {
+    return products.map((p, idx) => {
       const isOnSale = p.isOnSale || p.is_on_sale;
       const discountRate = p.discountRate ?? 0;
 
       return {
         id: p._id,
         image: p.images?.[0],
+        images: p.images ?? [],
         name: p.name,
         meta: p.description,
         price: p.price,
@@ -140,19 +183,80 @@ function ListPage() {
         discountText: isOnSale && discountRate > 0 ? `${discountRate}%` : null,
         badge: isOnSale ? "SALE" : null,
         isOnSale,
+
+        sizes: p.sizes ?? [],
+        material: p.material,
+
+        // ✅ 정렬용
+        createdAt: p.createdAt, // 최신등록순
+        salesCount: p.salesCount ?? null, // 판매순 (필드가 있을 때만)
+        _idx: idx, // 추천순(원래순서) 유지용
       };
     });
   }, [products]);
 
+  const sortedProducts = useMemo(() => {
+    const arr = [...mappedProducts];
+
+    switch (sortKey) {
+      case "priceAsc":
+        arr.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+        break;
+      case "priceDesc":
+        arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+        break;
+      case "newest":
+        arr.sort((a, b) => {
+          const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return tb - ta;
+        });
+        break;
+      case "best":
+        // salesCount가 없으면 추천순 유지
+        arr.sort((a, b) => (b.salesCount ?? -1) - (a.salesCount ?? -1));
+        break;
+      case "recommend":
+      default:
+        arr.sort((a, b) => (a._idx ?? 0) - (b._idx ?? 0));
+        break;
+    }
+
+    return arr;
+  }, [mappedProducts, sortKey]);
+
+  useEffect(() => {
+    if (!sortOpen) return;
+
+    const onDown = (e) => {
+      const btn = sortBtnRef.current;
+      const pop = sortPopRef.current;
+      if (!btn || !pop) return;
+
+      if (btn.contains(e.target) || pop.contains(e.target)) return;
+      setSortOpen(false);
+    };
+
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [sortOpen]);
+
   useEffect(() => {
     const fetchProducts = async () => {
+      console.log("API filters:", apiFilters);
+
+      // ✅ 핵심: 필터 바뀌는 순간 기존 상품 제거
+      setProducts([]);
       setLoading(true);
+
       try {
         const data = await getProducts(apiFilters);
-        setProducts(data.products);
-        setTotalCount(data.total);
+        setProducts(data.products || []);
+        setTotalCount(data.total ?? 0);
       } catch (e) {
         console.error("상품 조회 실패", e);
+        setProducts([]);
+        setTotalCount(0);
       } finally {
         setLoading(false);
       }
@@ -324,17 +428,18 @@ function ListPage() {
             {/* 소재 필터 */}
             <h2 style={styles.filterTitle}>소재</h2>
             <div style={styles.materialList}>
-              {materials.map((m) => {
-                const checked = selectedMaterials.includes(m);
+              {materials.map(({ label, value }) => {
+                const checked = selectedMaterials.includes(value);
+
                 return (
-                  <label key={m} style={styles.checkRow}>
+                  <label key={value} style={styles.checkRow}>
                     <input
                       type="checkbox"
                       style={styles.checkbox}
                       checked={checked}
-                      onChange={() => toggleMaterial(m)}
+                      onChange={() => toggleMaterial(value)}
                     />
-                    <span style={styles.checkLabel}>{m}</span>
+                    <span style={styles.checkLabel}>{label}</span>
                   </label>
                 );
               })}
@@ -344,68 +449,151 @@ function ListPage() {
           {/* 오른쪽 상품 영역 */}
           <div style={styles.contentArea}>
             <div style={styles.contentTop}>
-              <div style={styles.countText}>218개 제품</div>
-              <button
-                type="button"
-                style={styles.iconBtn}
-                aria-label="필터/정렬"
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
+              <div style={styles.countText}>{mappedProducts.length}개 제품</div>
+              <div style={styles.sortWrap}>
+                <button
+                  ref={sortBtnRef}
+                  type="button"
+                  style={styles.iconBtn}
+                  aria-label="필터/정렬"
+                  onClick={() => setSortOpen((v) => !v)}
                 >
-                  <path
-                    d="M3 5h18v2H3V5zm4 6h10v2H7v-2zm3 6h4v2h-4v-2z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div style={styles.grid}>
-              {mappedProducts.map((p) => (
-                <article key={p.id} style={styles.card}>
-                  <div style={styles.imageBox}>
-                    {p.badge && <div style={styles.badge}>{p.badge}</div>}
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      style={styles.productImg}
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 5h18v2H3V5zm4 6h10v2H7v-2zm3 6h4v2h-4v-2z"
+                      fill="currentColor"
                     />
+                  </svg>
+                </button>
+                {sortOpen && (
+                  <div ref={sortPopRef} style={styles.sortPopup} role="menu">
+                    {sortOptions.map((opt) => {
+                      const checked = sortKey === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          style={styles.sortRow}
+                          onClick={() => {
+                            setSortKey(opt.key);
+                            setSortOpen(false);
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...styles.sortRadio,
+                              ...(checked ? styles.sortRadioOn : null),
+                            }}
+                            aria-hidden="true"
+                          />
+                          <span style={styles.sortLabel}>{opt.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-
-                  <div style={styles.thumbRow} aria-hidden="true">
-                    {Array.from({ length: 6 }).map((_, idx) => (
-                      <div key={idx} style={styles.thumb} />
-                    ))}
-                  </div>
-
-                  <div style={styles.cardBody}>
-                    <div style={styles.pName}>{p.name}</div>
-                    <div style={styles.pMeta}>{p.meta}</div>
-
-                    {!p.isOnSale ? (
-                      <div style={styles.priceRow}>
-                        <span style={styles.price}>{formatKRW(p.price)}</span>
-                      </div>
-                    ) : (
-                      <div style={styles.priceRow}>
-                        <span style={styles.discount}>{p.discountText}</span>
-                        <span style={styles.price}>{formatKRW(p.price)}</span>
-                        <span style={styles.oldPrice}>
-                          {formatKRW(p.oldPrice)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              ))}
+                )}
+              </div>
             </div>
+            {mappedProducts.length === 0 ? (
+              <div style={styles.empty}>
+                선택하신 조건에 맞는 상품이 없습니다.
+              </div>
+            ) : (
+              <div style={styles.grid}>
+                {sortedProducts.map((p) => (
+                  <article
+                    key={p.id}
+                    style={{
+                      ...styles.card,
+                      ...(hoveredId === p.id ? styles.cardHover : null),
+                    }}
+                    onMouseEnter={() => setHoveredId(p.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    onClick={() => navigate(`/products/${p.id}`)}
+                  >
+                    {hoveredId === p.id && <div style={styles.cardOverlay} />}
+                    {/* 기존 카드 내용 */}
+                    {/* ✅ 실제 카드 내용은 항상 위에 보이게 */}
+                    <div style={styles.cardOverlayContent}>
+                      <div style={styles.imageBox}>
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          style={styles.productImg}
+                        />
+                      </div>
+
+                      <div style={styles.thumbRow} aria-hidden="true">
+                        {Array.from({ length: 6 }).map((_, idx) => (
+                          <div key={idx} style={styles.thumb} />
+                        ))}
+                      </div>
+
+                      <div style={styles.cardBody}>
+                        <div style={styles.pName}>{p.name}</div>
+                        <div style={styles.pMeta}>{p.meta}</div>
+
+                        {!p.isOnSale ? (
+                          <div style={styles.priceRow}>
+                            <span style={styles.price}>
+                              {formatKRW(p.price)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div style={styles.priceRow}>
+                            <span style={styles.discount}>
+                              {p.discountText}
+                            </span>
+                            <span style={styles.price}>
+                              {formatKRW(p.price)}
+                            </span>
+                            <span style={styles.oldPrice}>
+                              {formatKRW(p.oldPrice)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ✅ hover일 때만 사이즈 영역 추가 (레이아웃은 카드 내부에서만 늘어남) */}
+                      {hoveredId === p.id && (
+                        <div style={styles.hoverExtra}>
+                          <div style={styles.hoverSizes}>
+                            {[
+                              220, 230, 240, 250, 255, 260, 265, 270, 275, 280,
+                              285, 290, 295, 300, 305, 310, 315, 320,
+                            ].map((sz) => {
+                              const found = p.sizes?.find((x) => x.size === sz);
+                              const available = !!found?.available;
+
+                              return (
+                                <button
+                                  key={sz}
+                                  type="button"
+                                  disabled={!available}
+                                  style={{
+                                    ...styles.hoverSizeBtn,
+                                    ...(available
+                                      ? styles.hoverSizeBtnOn
+                                      : styles.hoverSizeBtnOff),
+                                  }}
+                                >
+                                  {sz}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -617,10 +805,14 @@ styles.grid = {
   display: "grid",
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: "28px",
+  overflow: "visible",
 };
 
 styles.card = {
   background: "transparent",
+  background: "white",
+  position: "relative",
+  overflow: "visible",
 };
 
 styles.imageBox = {
@@ -676,5 +868,104 @@ styles.oldPrice = {
   textDecoration: "line-through",
 };
 styles.discount = { fontSize: "12px", color: "#c0392b", fontWeight: 700 };
+
+// 카드가 hover되면 “떠오르는” 효과
+styles.cardHover = {
+  position: "relative",
+  zIndex: 50,
+  background: "#fff",
+};
+
+// hover일 때 아래로 확장되는 영역
+styles.hoverExtra = { paddingTop: "14px" };
+
+styles.hoverSizes = {
+  display: "grid",
+  gridTemplateColumns: "repeat(6, 1fr)",
+  gap: "8px",
+  marginTop: "6px",
+};
+
+styles.hoverSizeBtn = {
+  height: "34px",
+  fontSize: "12px",
+  border: "1px solid #ddd",
+  background: "#fff",
+};
+
+styles.hoverSizeBtnOn = { color: "#111", cursor: "pointer" };
+
+styles.hoverSizeBtnOff = {
+  color: "#bbb",
+  border: "1px solid #eee",
+  background: "#fafafa",
+  cursor: "not-allowed",
+};
+
+// hover 시 덮는 흰 배경 레이어 (레이아웃 영향 없음)
+styles.cardOverlay = {
+  position: "absolute",
+  top: "-30px",
+  left: "-30px",
+  right: "-30px",
+  bottom: "-30px",
+  background: "#fff",
+  zIndex: 20,
+};
+
+// 오버레이 안의 컨텐츠는 위에
+styles.cardOverlayContent = {
+  position: "relative",
+  zIndex: 21,
+};
+styles.sortWrap = {
+  position: "relative", // ✅ 팝업 absolute 기준점
+  display: "inline-block",
+};
+
+styles.sortPopup = {
+  position: "absolute",
+  top: "calc(100% + 8px)", // ✅ 버튼 바로 아래로
+  right: "0px", // ✅ 버튼 오른쪽 정렬 유지
+  width: "200px",
+  background: "#fff",
+  border: "1px solid #111",
+  borderRadius: "6px",
+  padding: "10px 0",
+  zIndex: 1000,
+};
+
+styles.sortRow = {
+  width: "100%",
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  padding: "10px 14px",
+  background: "transparent",
+  border: "none",
+  textAlign: "left",
+  cursor: "pointer",
+};
+
+styles.sortRadio = {
+  width: "14px",
+  height: "14px",
+  borderRadius: "999px",
+  border: "1.5px solid #111",
+  display: "inline-block",
+  boxSizing: "border-box",
+  position: "relative",
+};
+
+styles.sortRadioOn = {
+  background: "#111",
+  borderColor: "#111",
+};
+
+styles.sortLabel = {
+  fontSize: "14px",
+  fontWeight: 600,
+  color: "#111",
+};
 
 export default ListPage;
