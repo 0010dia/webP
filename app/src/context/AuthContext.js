@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(user_id, password);
       if (response.success) {
         setUser(response.user);
-        return { success: true };
+        return { success: true, user: response.user };
       }
       return { success: false, message: response.message };
     } catch (error) {

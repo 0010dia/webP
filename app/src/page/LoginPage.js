@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import client from '../api/client'; // client 임포트
+import { useAuth } from '../context/AuthContext';
 
 const PageContainer = styled.div`
   display: flex;
@@ -86,6 +86,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,20 +94,23 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await client.post('/api/auth/login', {
-        user_id: userId,
-        password: password,
-      });
+      const result = await login(userId, password);
 
-      if (response.data.success) {
+      if (result.success) {
         alert('로그인 성공!');
-        navigate('/order-history'); // 로그인 후 주문 내역 페이지로 리다이렉트
+
+        // 역할 기반 리다이렉션
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/order-history');
+        }
       } else {
-        setError(response.data.message || '로그인 실패');
+        setError(result.message || '로그인 실패');
       }
     } catch (err) {
       console.error('로그인 오류:', err);
-      setError(err.response?.data?.message || '로그인 중 오류가 발생했습니다.');
+      setError('로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
