@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 const { isLoggedIn } = require('../config/authMiddleware');
 
 // 주문 생성 (결제)
@@ -15,8 +16,17 @@ router.post('/', isLoggedIn, async (req, res) => {
       items,
       totalAmount
     });
-    
+
     await newOrder.save();
+
+    // 판매량 증가
+    for (const item of items) {
+      await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { salesCount: item.quantity } }
+      );
+    }
+
     res.json({ success: true, orderId: newOrder._id });
   } catch (error) {
     console.error(error);
