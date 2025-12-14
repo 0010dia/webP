@@ -6,7 +6,7 @@ import { getProductById } from '../api/products';
 import CartDrawer from '../components/CartDrawer';
 import client from '../api/client';
 
-const SIZES = [250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300];
+
 
 // 로컬 색상 정보 (백엔드에서 colors 필드를 받지 않으므로 로컬에서 관리)
 const LOCAL_COLORS = [
@@ -34,6 +34,17 @@ const LOCAL_COLORS = [
 
 // --- Styled Components ---
 const PageContainer = styled.div` max-width: 1200px; margin: 0 auto; padding: 40px 20px; font-family: 'Pretendard', 'Helvetica Neue', Arial, sans-serif; color: #212121; `;
+
+const OriginalPrice = styled.span`
+  text-decoration: line-through;
+  color: #888;
+  margin-right: 10px;
+`;
+
+const DiscountedPrice = styled.span`
+  font-weight: bold;
+  color: #c0392b; // A noticeable color for discount
+`;
 const ContentGrid = styled.div` display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; margin-bottom: 80px; @media (max-width: 992px) { grid-template-columns: 1fr; } `;
 const LeftSection = styled.div` width: 100%; `;
 const ImageContainer = styled.div` position: relative; width: 100%; padding-bottom: 100%; background-color: #eaddcf; margin-bottom: 0; `;
@@ -243,13 +254,24 @@ const ProductDetailPage = () => {
         <RightSection>
           <Breadcrumb>Home › 남성 › {product.name}</Breadcrumb>
           <ProductTitle>{product.name}</ProductTitle>
-          <Price>₩{product.price.toLocaleString()}</Price>
+          <Price>
+            {product.is_on_sale && product.discountRate > 0 ? (
+              <>
+                <OriginalPrice>₩{product.price.toLocaleString()}</OriginalPrice>
+                <DiscountedPrice>
+                  ₩{(product.price * (1 - product.discountRate / 100)).toLocaleString()}
+                </DiscountedPrice>
+              </>
+            ) : (
+              <span>₩{product.price.toLocaleString()}</span>
+            )}
+          </Price>
           <Description>{product.description}</Description>
           <OptionLabel>색상 <span style={{fontWeight:'normal', color:'#666'}}>{LOCAL_COLORS[activeIndex].name}</span></OptionLabel>
           <ColorGrid>{LOCAL_COLORS.map((color, idx) => (<ColorThumbnail key={idx} src={color.thumb} $active={idx === activeIndex} onClick={() => setActiveIndex(idx)}/>))}</ColorGrid>
           <GenderToggle><GenderBtn $active={true}>남성</GenderBtn><GenderBtn $active={false}>여성</GenderBtn></GenderToggle>
           <OptionLabel>사이즈</OptionLabel>
-          <SizeGrid>{SIZES.map(size => (<SizeBtn key={size} $active={selectedSize === size} onClick={() => setSelectedSize(size)}>{size}</SizeBtn>))}</SizeGrid>
+          <SizeGrid>{product.sizes.map(sizeObj => (<SizeBtn key={sizeObj.size} $active={selectedSize === sizeObj.size} onClick={() => setSelectedSize(sizeObj.size)} disabled={!sizeObj.available}>{sizeObj.size}</SizeBtn>))}</SizeGrid>
           <OptionLabel>핏 가이드 <span style={{textDecoration:'underline', fontWeight:'normal', cursor:'pointer'}}>자세한 가이드</span></OptionLabel>
           <FitGuide><FitBar><FitDot /></FitBar><FitLabels><span>작게 나옴</span><span>정사이즈</span><span>크게 나옴</span></FitLabels></FitGuide>
           <div style={{fontSize:'12px', fontWeight:'bold', marginTop:'20px'}}>오프라인 매장 재고 확인! <br/><span style={{fontWeight:'normal', color:'#666'}}>사이즈를 선택하시면 재고가 있는 매장을 확인하실 수 있습니다.</span></div>
