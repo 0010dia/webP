@@ -6,8 +6,6 @@ import { getProductById } from '../api/products';
 import CartDrawer from '../components/CartDrawer';
 import client from '../api/client';
 
-
-
 // 로컬 색상 정보 (백엔드에서 colors 필드를 받지 않으므로 로컬에서 관리)
 const LOCAL_COLORS = [
   { 

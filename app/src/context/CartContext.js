@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import * as cartAPI from '../api/cart'; // API 연결
 
 const CartContext = createContext();
 
@@ -9,51 +10,59 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  // 로컬 스토리지에서 장바구니 데이터 불러오기 (새로고침 해도 유지됨)
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('myCart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [cart, setCart] = useState([]);
+
+  // 1. 장바구니 데이터 가져오기
+  const fetchCart = async () => {
+    try {
+      const response = await cartAPI.getCart();
+      if (response.success) {
+        setCart(response.cart || []);
+      }
+    } catch (error) {
+      console.log('장바구니 로드 실패 (비로그인 등):', error);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem('myCart', JSON.stringify(cart));
-  }, [cart]);
+    fetchCart();
+  }, []);
 
-  // 장바구니 추가 함수 (상품 전체 정보, 사이즈, 수량, 색상명, 이미지)
-  const addItem = (product, size, quantity, colorName, image) => {
-    setCart(prev => {
-      // 동일한 상품(ID + 사이즈 + 색상)이 있는지 확인
-      const existingItemIndex = prev.findIndex(item => 
-        item._id === product._id && item.size === size && item.colorName === colorName
-      );
-
-      if (existingItemIndex > -1) {
-        // 이미 있으면 수량만 증가
-        const newCart = [...prev];
-        newCart[existingItemIndex].quantity += quantity;
-        return newCart;
-      } else {
-        // 없으면 새로 추가
-        const newItem = {
-          _id: product._id,
-          name: product.name,
-          price: product.price, // 가격 정보 저장
-          size,
-          quantity,
-          colorName, // 색상 이름 저장
-          image,     // 색상별 이미지 저장
-        };
-        return [...prev, newItem];
+  // 2. 장바구니 추가
+  const addItem = async (product, size, quantity, colorName, image) => {
+    try {
+      // DB에 저장
+      const response = await cartAPI.addToCart({
+        productId: product._id,
+        size,
+        quantity,
+        colorName,
+        image
+      });
+      
+      // 성공하면 DB에서 최신 카트 받아오기
+      if (response.success) {
+        setCart(response.cart);
       }
-    });
+    } catch (error) {
+      console.error("장바구니 추가 실패:", error);
+      alert("장바구니 추가 중 오류가 발생했습니다.");
+    }
   };
 
-  // 장바구니 항목 삭제
-  const removeItem = (index) => {
-    setCart(prev => prev.filter((_, i) => i !== index));
+  // 3. 장바구니 삭제
+  const removeItem = async (index) => {
+    try {
+      const response = await cartAPI.removeFromCart(index);
+      if (response.success) {
+        setCart(response.cart);
+      }
+    } catch (error) {
+      console.error("삭제 실패:", error);
+    }
   };
 
-  // 장바구니 수량 변경 (선택 사항)
+  // 4. 수량 변경 (로컬 UI만 업데이트하거나 API 구현 필요)
   const updateQuantity = (index, change) => {
     setCart(prev => prev.map((item, i) => {
       if (i === index) {
@@ -62,6 +71,19 @@ export const CartProvider = ({ children }) => {
       }
       return item;
     }));
+    // 주의: 실제로는 API로 수량 변경 요청을 보내야 DB와 동기화됩니다.
+  };
+
+  // 5. 장바구니 비우기 (결제 완료 후)
+  const clearCart = async () => {
+    try {
+      const response = await cartAPI.clearCart();
+      if (response.success) {
+        setCart(response.cart); // 서버로부터 받은 빈 배열로 상태 업데이트
+      }
+    } catch (error) {
+      console.error("장바구니 비우기 실패:", error);
+    }
   };
 
   const value = {
@@ -69,6 +91,7 @@ export const CartProvider = ({ children }) => {
     addItem,
     removeItem,
     updateQuantity,
+    clearCart, // ✅ 반드시 여기에 포함되어야 함
     cartCount: cart.length,
   };
 
