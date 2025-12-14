@@ -11,49 +11,24 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/shop')
 // 🟢 리스트 페이지와 상세 페이지 모두 만족하는 완전한 데이터
 const seedData = {
   // 1. 기본 정보
-  name: "남성 트리 러너 NZ",
-  price: 170000,
+  name: "남성 울 크루저 슬립온",
+  price: 98000,
   
   // 2. ListPage.js & Slide.js 호환용 데이터
-  image: "/img/black_4.avif", // 대표 이미지
-  meta: "가볍고 시원한 착화감, 데일리 스니커즈", // 리스트에 뜰 설명
-  isOnSale: false, // 세일 아님
+  images: ["/uploads/shoe1-1.jpg", "/uploads/shoe1-2.jpg"], // Changed to images array
+  meta: "가볍고 시원한 착화감, 데일리 슬립온",
+  is_on_sale: true, // Updated to is_on_sale and true
   badge: "NEW",    // 뱃지
-  color: "내추럴 블랙", // 슬라이드용 색상명
+ (kept for now, will remove later if explicitly requested)
   sizes: [250, 255, 260, 265, 270, 275, 280], // 구매 가능 사이즈
   
   // 3. 상세 페이지 및 필터링용 데이터
-  description: "최상의 편안함을 위해 세심하게 만들어진 트리 러너 NZ는 메모리폼 풋베드로 다양한 발 형태에도 유연하게 대응해, 누구에게나 안정적인 착화감을 제공합니다.",
-  material: "유칼립투스 트리",
-  category: "men", // 남성 카테고리
+  description: "메리노 울을 사용한 편안한 슬립온. 가벼운 착화감과 따뜻함을 동시에.",
+  material: "wool",
+  category: ["lifestyle", "slipon"], // Changed to array
+  discountRate: 10, // Added discountRate
   
-  // 4. 상세 페이지 슬라이더용 색상 정보
-  colors: [
-    { 
-      code: 'black', 
-      name: '내추럴 블랙 (Natural Black)', 
-      image: "/img/black_4.avif", 
-      thumb: "/img/black_4.avif" 
-    },
-    { 
-      code: 'grey', 
-      name: '미스트 그레이 (Mist Grey)', 
-      image: "/img/grey_4.avif", 
-      thumb: "/img/grey_4.avif" 
-    },
-    { 
-      code: 'beige', 
-      name: '헤이지 베이지 (Hazy Beige)', 
-      image: "/img/4.avif", 
-      thumb: "/img/4.avif" 
-    },
-    { 
-      code: 'navy', 
-      name: '트루 네이비 (True Navy)', 
-      image: "/img/navy_4.avif", 
-      thumb: "/img/navy_4.avif" 
-    }
-  ]
+  // 4. 상세 페이지 슬라이더용 색상 정보 (Removed colors array)
 };
 
 const seedDB = async () => {

@@ -6,10 +6,43 @@ import { getProductById } from '../api/products';
 import CartDrawer from '../components/CartDrawer';
 import client from '../api/client';
 
-const SIZES = [250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300];
+// 로컬 색상 정보 (백엔드에서 colors 필드를 받지 않으므로 로컬에서 관리)
+const LOCAL_COLORS = [
+  { 
+    code: 'black', 
+    name: '내추럴 블랙 (Natural Black)', 
+    thumb: "/img/black_4.avif" 
+  },
+  { 
+    code: 'grey', 
+    name: '미스트 그레이 (Mist Grey)', 
+    thumb: "/img/grey_4.avif" 
+  },
+  { 
+    code: 'beige', 
+    name: '헤이지 베이지 (Hazy Beige)', 
+    thumb: "/img/4.avif" 
+  },
+  { 
+    code: 'navy', 
+    name: '트루 네이비 (True Navy)', 
+    thumb: "/img/navy_4.avif" 
+  }
+];
 
 // --- Styled Components ---
 const PageContainer = styled.div` max-width: 1200px; margin: 0 auto; padding: 40px 20px; font-family: 'Pretendard', 'Helvetica Neue', Arial, sans-serif; color: #212121; `;
+
+const OriginalPrice = styled.span`
+  text-decoration: line-through;
+  color: #888;
+  margin-right: 10px;
+`;
+
+const DiscountedPrice = styled.span`
+  font-weight: bold;
+  color: #c0392b; // A noticeable color for discount
+`;
 const ContentGrid = styled.div` display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; margin-bottom: 80px; @media (max-width: 992px) { grid-template-columns: 1fr; } `;
 const LeftSection = styled.div` width: 100%; `;
 const ImageContainer = styled.div` position: relative; width: 100%; padding-bottom: 100%; background-color: #eaddcf; margin-bottom: 0; `;
@@ -43,7 +76,7 @@ const FitDot = styled.div` position: absolute; top: 50%; left: 50%; transform: t
 const AddCartBtn = styled.button` width: 100%; padding: 20px; background: #212121; color: white; font-size: 16px; font-weight: bold; border: none; cursor: pointer; margin-top: 20px; &:hover { background: #333; } &:disabled { background: #ccc; cursor: not-allowed; } `;
 const ReviewSection = styled.div` background: #f9f9f9; padding: 80px 20px; margin-top: 80px; text-align: center; `;
 const ReviewCard = styled.div` max-width: 900px; margin: 0 auto 30px; text-align: left; `;
-const ReviewHeader = styled.div` display: flex; justify-content: space-between; margin-bottom: 20px; border-top: 1px solid #ddd; padding-top: 20px; `;
+const ReviewHeader = styled.div` display: flex; justify-content: space-between; margin-bottom: 0; border-top: 1px solid #ddd; padding-top: 30px; `;
 const ReviewImg = styled.img` width: 120px; height: 120px; object-fit: cover; border-radius: 4px; margin-top: 15px; `;
 
 const ReviewForm = styled.div`
@@ -127,21 +160,21 @@ const ProductDetailPage = () => {
     return <PageContainer>Product not found.</PageContainer>;
   }
 
-  const handleNext = () => setActiveIndex((prev) => (prev + 1) % product.colors.length);
-  const handlePrev = () => setActiveIndex((prev) => (prev - 1 + product.colors.length) % product.colors.length);
+  const handleNext = () => setActiveIndex((prev) => (prev + 1) % LOCAL_COLORS.length);
+  const handlePrev = () => setActiveIndex((prev) => (prev - 1 + LOCAL_COLORS.length) % LOCAL_COLORS.length);
   const toggleAccordion = (name) => setActiveAccordion(activeAccordion === name ? null : name);
 
   const handleAddToCart = async () => {
     if(!selectedSize) return alert("사이즈를 선택해주세요.");
     
-    const selectedColor = product.colors[activeIndex];
+    const selectedColor = LOCAL_COLORS[activeIndex]; // Use LOCAL_COLORS
 
     await addItem(
       product,
       selectedSize,
       1,
       selectedColor.name,
-      selectedColor.thumb
+      product.images[activeIndex] // Use product.images for image
     );
 
     setIsCartOpen(true);
@@ -179,7 +212,7 @@ const ProductDetailPage = () => {
         <LeftSection>
           <ImageContainer>
             {product.badge && <NewBadge>{product.badge}</NewBadge>}
-            <MainImage src={product.colors[activeIndex].image} alt={product.colors[activeIndex].name} />
+            <MainImage src={product.images[activeIndex]} alt={LOCAL_COLORS[activeIndex].name} />
             
             <SliderControlsOverlay>
               <ButtonGroup>
@@ -191,7 +224,7 @@ const ProductDetailPage = () => {
                 </NavBtn>
               </ButtonGroup>
               <ProgressBarContainer>
-                {product.colors.map((_, idx) => (
+                {LOCAL_COLORS.map((_, idx) => (
                   <ProgressLine
                     key={idx} 
                     $active={idx === activeIndex} 
@@ -219,13 +252,24 @@ const ProductDetailPage = () => {
         <RightSection>
           <Breadcrumb>Home › 남성 › {product.name}</Breadcrumb>
           <ProductTitle>{product.name}</ProductTitle>
-          <Price>₩{product.price.toLocaleString()}</Price>
+          <Price>
+            {product.is_on_sale && product.discountRate > 0 ? (
+              <>
+                <OriginalPrice>₩{product.price.toLocaleString()}</OriginalPrice>
+                <DiscountedPrice>
+                  ₩{(product.price * (1 - product.discountRate / 100)).toLocaleString()}
+                </DiscountedPrice>
+              </>
+            ) : (
+              <span>₩{product.price.toLocaleString()}</span>
+            )}
+          </Price>
           <Description>{product.description}</Description>
-          <OptionLabel>색상 <span style={{fontWeight:'normal', color:'#666'}}>{product.colors[activeIndex].name}</span></OptionLabel>
-          <ColorGrid>{product.colors.map((color, idx) => (<ColorThumbnail key={idx} src={color.thumb} $active={idx === activeIndex} onClick={() => setActiveIndex(idx)}/>))}</ColorGrid>
+          <OptionLabel>색상 <span style={{fontWeight:'normal', color:'#666'}}>{LOCAL_COLORS[activeIndex].name}</span></OptionLabel>
+          <ColorGrid>{LOCAL_COLORS.map((color, idx) => (<ColorThumbnail key={idx} src={color.thumb} $active={idx === activeIndex} onClick={() => setActiveIndex(idx)}/>))}</ColorGrid>
           <GenderToggle><GenderBtn $active={true}>남성</GenderBtn><GenderBtn $active={false}>여성</GenderBtn></GenderToggle>
           <OptionLabel>사이즈</OptionLabel>
-          <SizeGrid>{SIZES.map(size => (<SizeBtn key={size} $active={selectedSize === size} onClick={() => setSelectedSize(size)}>{size}</SizeBtn>))}</SizeGrid>
+          <SizeGrid>{product.sizes.map(sizeObj => (<SizeBtn key={sizeObj.size} $active={selectedSize === sizeObj.size} onClick={() => setSelectedSize(sizeObj.size)} disabled={!sizeObj.available}>{sizeObj.size}</SizeBtn>))}</SizeGrid>
           <OptionLabel>핏 가이드 <span style={{textDecoration:'underline', fontWeight:'normal', cursor:'pointer'}}>자세한 가이드</span></OptionLabel>
           <FitGuide><FitBar><FitDot /></FitBar><FitLabels><span>작게 나옴</span><span>정사이즈</span><span>크게 나옴</span></FitLabels></FitGuide>
           <div style={{fontSize:'12px', fontWeight:'bold', marginTop:'20px'}}>오프라인 매장 재고 확인! <br/><span style={{fontWeight:'normal', color:'#666'}}>사이즈를 선택하시면 재고가 있는 매장을 확인하실 수 있습니다.</span></div>
@@ -257,7 +301,7 @@ const ProductDetailPage = () => {
                 {new Date(review.createdAt).toLocaleDateString()}
               </div>
             </ReviewHeader>
-            <p style={{lineHeight:'1.6', fontSize:'14px', marginTop:'10px'}}>
+            <p style={{lineHeight:'1.6', fontSize:'14px', marginTop:'30px'}}>
               {review.content}
             </p>
             <div style={{fontSize:'12px', color:'#666', marginTop:'5px'}}>

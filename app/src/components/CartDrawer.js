@@ -64,7 +64,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
     } catch (error) {
       console.error("주문 실패:", error);
-      alert("주문 처리에 실패했습니다.");
+      alert(error.response?.data?.message || "주문 처리에 실패했습니다.");
     }
   };
 
