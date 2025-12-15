@@ -13,7 +13,7 @@ function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa" }}>
       <Header />
-      <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px" }}>
+  
         <Routes>
           <Route path="/" element={<MainPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
@@ -40,7 +40,7 @@ function App() {
             }
           />
         </Routes>
-      </main>
+   
     </div>
   );
 }

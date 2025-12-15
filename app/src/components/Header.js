@@ -393,7 +393,6 @@ const SustainabilityDropdown = () => (
 export default function Header() {
 
     const [activeDropdown, setActiveDropdown] = useState(null);
-    const [cartCount] = useState(3);
     const { user } = useAuth();
     const navigate = useNavigate(); 
 
@@ -478,10 +477,9 @@ export default function Header() {
                     </IconButton>
 
                     <IconWrapper
-                        to="/cart"
+                        to="/order"
                     >
                         <CartIcon />
-                        <CartBadge $count={cartCount} />
                     </IconWrapper>
                 </IconNav>
 
