@@ -24,5 +24,6 @@ yarn-error.log*
 
 /server/public/uploads
 /server/.env
+/server/node_modules
 /.doc
 /.claude

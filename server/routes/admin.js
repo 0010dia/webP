@@ -4,6 +4,8 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const upload = require('../config/multer');
 
+const API_BASE_URL = "http://localhost:5001";
+
 // 관리자 권한 체크 미들웨어
 const isAdmin = (req, res, next) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
@@ -61,7 +63,7 @@ router.post('/products', isAdmin, upload.array('images', 10), async (req, res) =
     const { name, description, category, material, price, discountRate, is_on_sale, sizes } = req.body;
 
     // 업로드된 이미지 경로 처리
-    const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    const images = req.files ? req.files.map(file => `${API_BASE_URL}/server/public/uploads/${file.filename}`) : [];
 
     // 사이즈 데이터 처리
     let sizesArray = [];
@@ -244,54 +246,79 @@ router.get('/sales-report', isAdmin, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-    // 날짜 필터 조건 설정
+    // 날짜 필터 조건 설정 (createdAt 사용)
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
-        orderDate: {
+        createdAt: {
           $gte: new Date(startDate),
           $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999))
         }
       };
     }
 
-    // Aggregation Pipeline으로 판매 데이터 집계
+    // Product 컬렉션과 조인하는 Aggregation Pipeline
     const salesData = await Order.aggregate([
       { $match: dateFilter },
       { $unwind: '$items' },
       {
-        $group: {
-          _id: '$items.productId',
-          productName: { $first: '$items.productName' },
-          totalQuantity: { $sum: '$items.quantity' },
-          totalRevenue: { $sum: { $multiply: ['$items.quantity', '$items.priceAtPurchase'] } }
+        $lookup: {
+          from: 'products',
+          localField: 'items.productId',
+          foreignField: '_id',
+          as: 'productInfo'
         }
       },
-      { $sort: { totalRevenue: -1 } }
+      { $unwind: { path: '$productInfo', preserveNullAndEmptyArrays: false } },
+      // productInfo가 없는 경우 필터링
+      { $match: { productInfo: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: '$items.productId',
+          productName: { $first: '$productInfo.name' },
+          totalQuantity: { $sum: '$items.quantity' },
+          totalRevenue: {
+            $sum: {
+              $multiply: [
+                '$items.quantity',
+                {
+                  $cond: {
+                    if: { $gt: ['$productInfo.discountRate', 0] },
+                    then: {
+                      $multiply: [
+                        '$productInfo.price',
+                        { $subtract: [1, { $divide: ['$productInfo.discountRate', 100] }] }
+                      ]
+                    },
+                    else: '$productInfo.price'
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      { $sort: { totalRevenue: -1 } },
+      {
+        $project: {
+          _id: 1,
+          productName: 1,
+          totalQuantity: 1,
+          totalRevenue: { $round: ['$totalRevenue', 0] }
+        }
+      }
     ]);
-
-    // 상품 정보 가져오기
-    const productIds = salesData.map(item => item._id);
-    const products = await Product.find({ _id: { $in: productIds } });
-
-    // 상품 정보와 판매 데이터 결합
-    const enrichedSalesData = salesData.map(sale => {
-      const product = products.find(p => p._id.toString() === sale._id.toString());
-      return {
-        ...sale,
-        product: product
-      };
-    });
 
     res.json({
       success: true,
-      salesData: enrichedSalesData
+      salesData: salesData
     });
   } catch (error) {
     console.error('판매 현황 조회 오류:', error);
     res.status(500).json({
       success: false,
-      message: '판매 현황 조회 중 오류가 발생했습니다.'
+      message: '판매 현황 조회 중 오류가 발생했습니다.',
+      error: error.message
     });
   }
 });
