@@ -133,7 +133,7 @@ const DropdownSection = styled.div`
     flex-direction: column;
     margin-right: 80px;
     opacity: 0;
-    animation: ${sectionSlideIn} 0.3s ease-out forwards;
+    animation: ${sectionSlideIn} 0.7s ease-out forwards;
     
     ${(props) => props.$delay && css`
         animation-delay: ${props.$delay};
@@ -290,35 +290,6 @@ const LogoWrapper = styled(Link)`
     }
 `;
 
-const CartBadge = styled.div.attrs(props => ({
-    'data-bubble': props.$count 
-}))`
-    position: absolute;
-    top: 0;
-    right: 0;
-    transform: translate(50%, -50%); 
-    z-index: 10;
-    
-    &::after {
-        content: attr(data-bubble);
-        position: absolute;
-        top: 0;
-        right: 0;
-        
-        display: ${props => props.$count > 0 ? 'flex' : 'none'}; 
-        align-items: center;
-        justify-content: center;
-        
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background-color: ${PRIMARY_COLOR};
-        color: #fff;
-        font-size: 0.5625rem;
-        font-weight: bold;
-        line-height: 1;
-    }
-`;
 
 
 const SearchIcon = () => (
@@ -365,7 +336,7 @@ const MenuGroup = ({ title, links, delay }) => (
 
 const SustainabilityDropdown = () => (
     <DropdownContentWrapper>
-        <AllbirdsSection delay="0s" /> 
+        <AllbirdsSection delay="0.1s" /> 
         <MenuGroup 
             title="스토리" 
             links={[
@@ -375,7 +346,7 @@ const SustainabilityDropdown = () => (
                 { label: "신발 관리 방법", to: "/sustainability/story/care" },
              
             ]}
-            delay="0.05s" 
+            delay="0.2s" 
         />
         <MenuGroup 
             title="소식" 
@@ -384,7 +355,7 @@ const SustainabilityDropdown = () => (
                 { label: "뉴스", to: "/sustainability/news" },
                 
             ]}
-            delay="0.10s" 
+            delay="0.3s" 
         />
    
     </DropdownContentWrapper>
