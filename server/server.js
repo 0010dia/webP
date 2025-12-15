@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 정적 파일 제공
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/server/public/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // 세션 설정
 const sessionConfig = {
