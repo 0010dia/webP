@@ -371,7 +371,7 @@ const SustainabilityDropdown = () => (
             links={[
                 { label: "올멤버스", to: "/sustainability/story/allmembers" },
                 { label: "올버즈 앰배서더", to: "/sustainability/story/ambassadors" },
-                { label: "ReRun (재판매 프로그램)", to: "/sustainability/story/rerun" },
+                { label: "ReRun", to: "/sustainability/story/rerun" },
                 { label: "신발 관리 방법", to: "/sustainability/story/care" },
              
             ]}
@@ -477,7 +477,7 @@ export default function Header() {
                     </IconButton>
 
                     <IconWrapper
-                        to="/order"
+                        to="/order-history"
                     >
                         <CartIcon />
                     </IconWrapper>

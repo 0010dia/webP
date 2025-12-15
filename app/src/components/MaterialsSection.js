@@ -28,12 +28,13 @@ const SectionWrapper = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 2em;
+  font-size: 3em;
   font-weight: 400;
   text-align: left;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   max-width: 1340px;
   margin: 0 auto 60px;
+  margin-top: 40px;
 `;
 
 const GridContainer = styled.div`
