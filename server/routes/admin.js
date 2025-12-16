@@ -283,7 +283,12 @@ router.get('/sales-report', isAdmin, async (req, res) => {
                 '$items.quantity',
                 {
                   $cond: {
-                    if: { $gt: ['$productInfo.discountRate', 0] },
+                    if: {
+                      $and: [
+                        { $eq: ['$productInfo.is_on_sale', true] },
+                        { $gt: ['$productInfo.discountRate', 0] }
+                      ]
+                    },
                     then: {
                       $multiply: [
                         '$productInfo.price',

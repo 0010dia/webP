@@ -20,6 +20,8 @@ const ItemInfo = styled.div`flex: 1; padding-right: 25px;`;
 const ItemName = styled.div`font-size: 14px; font-weight: bold; color: #212121; margin-bottom: 6px; line-height: 1.4;`;
 const ItemSize = styled.div`font-size: 13px; color: #666; margin-bottom: 8px;`;
 const ItemPrice = styled.div`font-size: 14px; font-weight: 600; color: #212121;`;
+const DiscountBadge = styled.div`font-size: 12px; color: #c0392b; margin-top: 4px; font-weight: 500;`;
+const OriginalPriceText = styled.span`text-decoration: line-through; color: #888; margin-right: 6px; font-size: 12px;`;
 const QuantityBox = styled.div`display: flex; align-items: center; border: 1px solid #212121; width: fit-content; margin-top: 12px; border-radius: 2px; height: 32px;`;
 const QtyBtn = styled.button`width: 32px; height: 100%; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; &:hover { background: #f9f9f9; }`;
 const QtyValue = styled.span`min-width: 30px; text-align: center; font-size: 13px; font-weight: 500;`;
@@ -99,8 +101,16 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 <ItemInfo>
                   <ItemName>{item.productName} - {item.colorName}</ItemName>
                   <ItemSize>{item.size}</ItemSize>
-                  <ItemPrice>₩{((item.price || 0) * item.quantity).toLocaleString()}</ItemPrice>
-                  
+                  <ItemPrice>
+                    {item.is_on_sale && item.discountRate > 0 && (
+                      <OriginalPriceText>₩{((item.originalPrice || 0) * item.quantity).toLocaleString()}</OriginalPriceText>
+                    )}
+                    ₩{((item.price || 0) * item.quantity).toLocaleString()}
+                  </ItemPrice>
+                  {item.is_on_sale && item.discountRate > 0 && (
+                    <DiscountBadge>{item.discountRate}% 할인 적용</DiscountBadge>
+                  )}
+
                   <QuantityBox>
                     <QtyBtn onClick={() => updateQuantity(idx, -1)}>-</QtyBtn>
                     <QtyValue>{item.quantity}</QtyValue>

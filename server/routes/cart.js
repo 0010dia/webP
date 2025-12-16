@@ -45,6 +45,12 @@ router.post('/', async (req, res) => {
       req.session.cart = [];
     }
 
+    // 할인가 계산
+    let finalPrice = product.price;
+    if (product.is_on_sale && product.discountRate > 0) {
+      finalPrice = product.price * (1 - product.discountRate / 100);
+    }
+
     // 동일한 상품, 동일한 사이즈, 동일한 색상이 이미 있는지 확인
     const existingItem = req.session.cart.find(
       item => item.productId === productId && item.size === Number(size) && item.colorName === colorName
@@ -58,7 +64,10 @@ router.post('/', async (req, res) => {
         productName: product.name,
         size: Number(size),
         quantity: Number(quantity),
-        price: product.price,
+        price: Math.round(finalPrice),        // 할인된 가격 저장
+        originalPrice: product.price,          // 원가도 참고용으로 저장
+        discountRate: product.discountRate,    // 할인율 저장
+        is_on_sale: product.is_on_sale,        // 세일 여부 저장
         image: image,
         colorName: colorName
       });
