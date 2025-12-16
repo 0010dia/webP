@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProducts } from "../api/products";
+import NewsletterSection from "../components/NewsLetterSection";
+import Footer from "../components/Footer";
 
 function ListPage() {
   const navigate = useNavigate();
@@ -169,28 +171,33 @@ function ListPage() {
       const isOnSale = p.isOnSale || p.is_on_sale;
       const discountRate = p.discountRate ?? 0;
 
+      const discountedPrice =
+        isOnSale && discountRate > 0
+          ? Math.round(p.price * (1 - discountRate / 100))
+          : p.price;
+
       return {
         id: p._id,
         image: p.images?.[0],
         images: p.images ?? [],
         name: p.name,
         meta: p.description,
-        price: p.price,
-        oldPrice:
-          isOnSale && discountRate > 0
-            ? Math.round(p.price / (1 - discountRate / 100))
-            : null,
+
+        // ✅ 가격 정리
+        price: discountedPrice, // 실제 결제 가격
+        oldPrice: isOnSale && discountRate > 0 ? p.price : null,
+
         discountText: isOnSale && discountRate > 0 ? `${discountRate}%` : null,
+
         badge: isOnSale ? "SALE" : null,
         isOnSale,
 
         sizes: p.sizes ?? [],
         material: p.material,
 
-        // ✅ 정렬용
-        createdAt: p.createdAt, // 최신등록순
-        salesCount: p.salesCount ?? null, // 판매순 (필드가 있을 때만)
-        _idx: idx, // 추천순(원래순서) 유지용
+        createdAt: p.createdAt,
+        salesCount: p.salesCount ?? null,
+        _idx: idx,
       };
     });
   }, [products]);
@@ -529,8 +536,16 @@ function ListPage() {
                       </div>
 
                       <div style={styles.thumbRow} aria-hidden="true">
-                        {Array.from({ length: 6 }).map((_, idx) => (
-                          <div key={idx} style={styles.thumb} />
+                        {p.images.slice(0).map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt=""
+                            style={styles.thumbImg}
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
                         ))}
                       </div>
 
@@ -597,6 +612,8 @@ function ListPage() {
           </div>
         </section>
       </div>
+      <NewsletterSection />
+      <Footer />
     </main>
   );
 }
@@ -848,11 +865,12 @@ styles.thumbRow = {
   padding: "10px 0 0",
 };
 
-styles.thumb = {
-  width: "44px",
-  height: "30px",
-  border: "1px solid #ddd",
-  background: "#f2f2f2",
+styles.thumbImg = {
+  width: 28,
+  height: 28,
+  objectFit: "cover",
+  borderRadius: 4,
+  border: "1px solid #e5e5e5",
 };
 
 styles.cardBody = { paddingTop: "14px" };
@@ -877,13 +895,23 @@ styles.cardHover = {
 };
 
 // hover일 때 아래로 확장되는 영역
-styles.hoverExtra = { paddingTop: "14px" };
+styles.hoverExtra = {
+  position: "absolute",
+  top: "100%",
+  left: "-30px", // ⬅️ card padding 만큼 음수
+  right: "-30px", // ⬅️ card padding 만큼 음수
+  padding: "14px 16px 0",
+  background: "#fff",
+  zIndex: 30,
+  boxSizing: "border-box",
+};
 
 styles.hoverSizes = {
   display: "grid",
   gridTemplateColumns: "repeat(6, 1fr)",
   gap: "8px",
   marginTop: "6px",
+  marginBottom: "32px",
 };
 
 styles.hoverSizeBtn = {
